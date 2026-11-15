@@ -1,27 +1,38 @@
-name: 'Build Windows EXE'
+name: 'Build Windows EXE on Linux'
 
 on:
-  workflow_dispatch: # 允许你在 Actions 页面手动点击按钮触发编译
-  push:
-    branches:
-      - fix/slider-captcha # 当你推送到这个分支时自动触发（可选）
+  workflow_dispatch:
 
 jobs:
   build-windows:
-    runs-on: windows-latest # 直接使用 Windows 环境编译，最稳妥
+    # 关键修复：强制在 Linux 环境编译，绕过 Windows 的 ESM 路径问题
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
+
+      - name: Install Linux dependencies for Tauri
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v6
-
+        uses: pnpm/action-setup@v4
+        # 关键修复：删除了 version 配置，避免与 package.json 中的 packageManager 冲突
 
       - name: Setup Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@v4
         with:
           node-version: lts/*
-          cache: 'pnpm' # 缓存 pnpm 依赖，加快后续编译速度
+          cache: 'pnpm'
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -29,13 +40,15 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: './src-tauri -> target' # 缓存 Rust 编译产物
+          workspaces: './src-tauri -> target'
 
       - name: Install frontend dependencies
         run: pnpm install
 
-      - name: Build Tauri App
+      - name: Build Tauri App (for Windows target)
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        # 这里没有配置 release 相关的参数，所以它只会构建并把产物上传为 Artifact
+        with:
+          # 指定编译目标为 Windows，即使运行在 Linux 上
+          args: --target x86_64-pc-windows-msvc
