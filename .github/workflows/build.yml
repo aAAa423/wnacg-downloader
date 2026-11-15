@@ -58,3 +58,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           args: --target x86_64-pc-windows-msvc --runner cargo-xwin
+
+      - name: Upload Windows installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: wnacg-downloader-windows
+          path: |
+            src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
+            src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
