@@ -28,7 +28,7 @@ jobs:
       VERSION: ${{ needs.get-version.outputs.VERSION }}
     outputs:
       VERSION: ${{ env.VERSION }}
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
